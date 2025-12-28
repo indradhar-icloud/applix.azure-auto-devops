@@ -114,12 +114,12 @@ def azure_webhook(
         # Extract work item details
         resource = payload.get("resource", {})
         work_item_id = resource.get("id")
-        work_item_type = resource.get("workItemType", "")
         fields = resource.get("fields", {})
+        work_item_type = fields.get("System.WorkItemType", "")
         
         print(f"Work item received: ID={work_item_id}, Type={work_item_type}")
         
-        # Process User Stories and Bugs
+        # Process User Stories
         if work_item_type not in ["User Story"]:
             print(f"Ignoring work item type: {work_item_type}")
             return {"status": "ignored", "message": f"Work item type {work_item_type} not processed"}
