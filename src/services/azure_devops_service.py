@@ -59,12 +59,23 @@ class AzureDevOpsService:
             response = requests.post(url, json=task_data, headers=self.headers)
             
             logger.info(f"Azure API Response: Status={response.status_code}")
+            logger.debug(f"Response body (first 500 chars): {response.text[:500]}")
             
             # Accept 200, 201, 203 as success
             if response.status_code in [200, 201, 203]:
-                task_id = response.json()['id']
-                logger.info(f"✓ Created task #{task_id}: {title}")
-                return task_id
+                try:
+                    response_json = response.json()
+                    task_id = response_json.get('id')
+                    if task_id is None:
+                        logger.error(f"✗ No 'id' field in response: {response_json}")
+                        return None
+                    logger.info(f"✓ Created task #{task_id}: {title}")
+                    return task_id
+                except ValueError as json_err:
+                    logger.error(f"✗ Failed to parse JSON response: {json_err}")
+                    logger.error(f"  Response status: {response.status_code}")
+                    logger.error(f"  Response body: {response.text[:500]}")
+                    return None
             else:
                 logger.error(f"✗ Failed to create task: {response.status_code} - {response.text[:200]}")
                 logger.error(f"  URL: {url}")
