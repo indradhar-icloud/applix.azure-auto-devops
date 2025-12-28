@@ -48,6 +48,10 @@ class EventProcessor:
             if event_type == EventType.USER_STORY_CREATED.value:
                 result = self._process_user_story_created(event_id, event_data)
                 self.event_queue.mark_completed(event_id, result)
+            elif event_type == EventType.USER_STORY_COMPLETED.value:
+                # Just mark as completed, no further processing needed
+                logger.info(f"[Event {event_id}] Completion event recorded")
+                self.event_queue.mark_completed(event_id, {"status": "recorded"})
             else:
                 raise Exception(f"Unknown event type: {event_type}")
         
