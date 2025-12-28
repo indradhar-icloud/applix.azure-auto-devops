@@ -58,15 +58,19 @@ class AzureDevOpsService:
         try:
             response = requests.post(url, json=task_data, headers=self.headers)
             
-            if response.status_code == 200:
+            logger.info(f"Azure API Response: Status={response.status_code}")
+            
+            if response.status_code in [200, 201]:
                 task_id = response.json()['id']
                 logger.info(f"✓ Created task #{task_id}: {title}")
                 return task_id
             else:
-                logger.error(f"✗ Failed to create task: {response.status_code} - {response.text[:100]}")
+                logger.error(f"✗ Failed to create task: {response.status_code} - {response.text[:200]}")
+                logger.error(f"  URL: {url}")
+                logger.error(f"  Headers: {self.headers}")
                 return None
         except Exception as e:
-            logger.error(f"✗ Exception creating task: {e}")
+            logger.error(f"✗ Exception creating task: {e}", exc_info=True)
             return None
     
     def link_task_to_story(self, task_id: int, story_id: int) -> bool:
