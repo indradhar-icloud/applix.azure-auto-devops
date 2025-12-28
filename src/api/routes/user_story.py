@@ -91,7 +91,7 @@ def azure_webhook(
 ):
     """
     Azure DevOps webhook endpoint for work item creation.
-    Automatically creates subtasks when a User Story is created in Azure DevOps.
+    Automatically creates subtasks when a User Story is created.
     
     Args:
         payload: Azure DevOps webhook payload
@@ -101,7 +101,7 @@ def azure_webhook(
         Confirmation response
     """
     try:
-        logger.info("Azure webhook received")
+        logger.info(f"Azure webhook received: {payload}")
         
         # Extract event type
         event_type = payload.get("eventType", "")
@@ -117,8 +117,10 @@ def azure_webhook(
         work_item_type = resource.get("workItemType", "")
         fields = resource.get("fields", {})
         
-        # Only process User Stories
-        if work_item_type != "User Story":
+        logger.info(f"Work item received: ID={work_item_id}, Type={work_item_type}")
+        
+        # Process User Stories and Bugs
+        if work_item_type not in ["User Story"]:
             logger.info(f"Ignoring work item type: {work_item_type}")
             return {"status": "ignored", "message": f"Work item type {work_item_type} not processed"}
         
@@ -126,9 +128,9 @@ def azure_webhook(
         area_path = fields.get("System.AreaPath", "Devops-automation")
         iteration_path = fields.get("System.IterationPath", "Devops-automation")
         
-        logger.info(f"Processing User Story #{work_item_id}: {title}")
+        logger.info(f"Processing {work_item_type} #{work_item_id}: {title}")
         
-        # Call create endpoint internally
+        # Create story and trigger subtask creation
         service = UserStoryService(db)
         result = service.create_user_story(
             story_id=work_item_id,
@@ -137,11 +139,11 @@ def azure_webhook(
             iteration_path=iteration_path
         )
         
-        logger.info(f"User Story #{work_item_id} processed successfully")
+        logger.info(f"Work item #{work_item_id} processed successfully - Event ID: {result.get('event_id')}")
         
         return {
             "status": "accepted",
-            "message": f"Story #{work_item_id} received. Subtasks will be created asynchronously.",
+            "message": f"Item #{work_item_id} received. Subtasks will be created asynchronously.",
             "story_id": work_item_id,
             "event_id": result.get("event_id")
         }
