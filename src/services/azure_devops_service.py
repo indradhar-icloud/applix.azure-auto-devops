@@ -28,6 +28,10 @@ class AzureDevOpsService:
         self.org = settings.AZURE_DEVOPS_ORG
         self.project = settings.AZURE_DEVOPS_PROJECT
         self.pat = settings.AZURE_DEVOPS_PAT
+        
+        if not self.pat:
+            logger.warning("⚠️ AZURE_DEVOPS_PAT is not set or is empty!")
+        
         self.headers = create_auth_header(self.pat) if self.pat else {}
     
     def create_task(
@@ -47,6 +51,11 @@ class AzureDevOpsService:
         Returns:
             Task ID if successful, None otherwise
         """
+        # Check authentication setup
+        if not self.pat:
+            logger.error("✗ AZURE_DEVOPS_PAT is not configured. Cannot create task.")
+            return None
+        
         url = build_work_item_url(
             self.org,
             self.project,
@@ -60,6 +69,14 @@ class AzureDevOpsService:
             
             logger.info(f"Azure API Response: Status={response.status_code}")
             logger.debug(f"Response body (first 500 chars): {response.text[:500]}")
+            
+            # Check for authentication errors (HTML response)
+            if response.headers.get('content-type', '').startswith('text/html'):
+                logger.error("✗ Authentication failed - received HTML instead of JSON")
+                logger.error(f"  This usually means: Invalid PAT token, PAT token expired, or wrong org/project")
+                logger.error(f"  URL: {url}")
+                logger.error(f"  Response status: {response.status_code}")
+                return None
             
             # Accept 200, 201, 203 as success
             if response.status_code in [200, 201, 203]:
