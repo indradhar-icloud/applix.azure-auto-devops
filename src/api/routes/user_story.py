@@ -101,14 +101,14 @@ def azure_webhook(
         Confirmation response
     """
     try:
-        logger.info(f"Azure webhook received: {payload}")
+        print(f"Azure webhook received: {payload}")
         
         # Extract event type
         event_type = payload.get("eventType", "")
         
         # Only process work item creation events
         if "workitem.created" not in event_type:
-            logger.info(f"Ignoring event type: {event_type}")
+            print(f"Ignoring event type: {event_type}")
             return {"status": "ignored", "message": f"Event type {event_type} not processed"}
         
         # Extract work item details
@@ -117,18 +117,18 @@ def azure_webhook(
         work_item_type = resource.get("workItemType", "")
         fields = resource.get("fields", {})
         
-        logger.info(f"Work item received: ID={work_item_id}, Type={work_item_type}")
+        print(f"Work item received: ID={work_item_id}, Type={work_item_type}")
         
         # Process User Stories and Bugs
         if work_item_type not in ["User Story"]:
-            logger.info(f"Ignoring work item type: {work_item_type}")
+            print(f"Ignoring work item type: {work_item_type}")
             return {"status": "ignored", "message": f"Work item type {work_item_type} not processed"}
         
         title = fields.get("System.Title", "")
         area_path = fields.get("System.AreaPath", "Devops-automation")
         iteration_path = fields.get("System.IterationPath", "Devops-automation")
         
-        logger.info(f"Processing {work_item_type} #{work_item_id}: {title}")
+        print(f"Processing {work_item_type} #{work_item_id}: {title}")
         
         # Create story and trigger subtask creation
         service = UserStoryService(db)
@@ -139,7 +139,7 @@ def azure_webhook(
             iteration_path=iteration_path
         )
         
-        logger.info(f"Work item #{work_item_id} processed successfully - Event ID: {result.get('event_id')}")
+        print(f"Work item #{work_item_id} processed successfully - Event ID: {result.get('event_id')}")
         
         return {
             "status": "accepted",
@@ -149,7 +149,7 @@ def azure_webhook(
         }
     
     except Exception as e:
-        logger.error(f"Webhook error: {e}", exc_info=True)
+        print(f"Webhook error: {e}", exc_info=True)
         return {
             "status": "error",
             "message": str(e)
